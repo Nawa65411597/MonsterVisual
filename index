@@ -1,0 +1,1273 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { RefreshCw, Heart, Dna, ArrowRight, Share2, Play, CheckCircle, RotateCcw, BookOpen, AlertCircle, Check, Users } from 'lucide-react';
+
+// --- Configuration Data based on User Request ---
+
+const TRAIT_CONFIG = [
+  {
+    id: 'head',
+    name: 'ลักษณะหัว (Head)',
+    allele1Label: 'Round & Bald (หัวล้าน)',
+    allele1: 'B',
+    allele2Label: 'Round & 3 hairs (มีผม 3 เส้น)',
+    allele2: 'b',
+    type: 'complete',
+    domAllele: 'B', recAllele: 'b',
+    domLabel: 'Round & Bald (หัวล้าน)', recLabel: 'Round & 3 hairs (มีผม 3 เส้น)'
+  },
+  {
+    id: 'legs',
+    name: 'ขา (Legs)',
+    allele1Label: '2 long (ขายาว 2 ข้าง)',
+    allele1: 'L',
+    allele2Label: '4 long (ขายาว 4 ข้าง)',
+    allele2: 'l',
+    type: 'complete',
+    domAllele: 'L', recAllele: 'l',
+    domLabel: '2 long (ขายาว 2 ข้าง)', recLabel: '4 long (ขายาว 4 ข้าง)'
+  },
+  {
+    id: 'eyes',
+    name: 'ตา (Eye)',
+    allele1Label: 'Two small eyes (2 ตาเล็ก)',
+    allele1: 'E',
+    allele2Label: 'One large eye (1 ตาใหญ่)',
+    allele2: 'e',
+    type: 'complete',
+    domAllele: 'E', recAllele: 'e',
+    domLabel: 'Two small eyes (2 ตาเล็ก)', recLabel: 'One large eye (1 ตาใหญ่)'
+  },
+  {
+    id: 'eyeColor',
+    name: 'สีตา (Eye Color)',
+    allele1Label: 'Red (สีแดง)',
+    allele1: 'R',
+    allele2Label: "White (สีขาว)", // Updated to R'
+    allele2: "R'", 
+    type: 'incomplete', 
+    domAllele: 'R', recAllele: "R'",
+    domLabel: 'Red (สีแดง)', recLabel: 'White (สีขาว)', mixLabel: 'Pink (สีชมพู)' 
+  },
+  {
+    id: 'skinColor',
+    name: 'สีผิว (Skin Color)',
+    allele1Label: 'Green (สีเขียว)',
+    allele1: 'G',
+    allele2Label: 'Blue (สีฟ้า)',
+    allele2: 'B', 
+    type: 'codominant', 
+    domAllele: 'G', recAllele: 'B',
+    domLabel: 'Green (สีเขียว)', recLabel: 'Blue (สีฟ้า)', mixLabel: 'Green & Blue Spots (เขียวลายฟ้า)'
+  },
+  {
+    id: 'tailShape',
+    name: 'รูปร่างหาง (Tail Shape)',
+    allele1Label: 'Curly (หางม้วน)',
+    allele1: 'C',
+    allele2Label: 'Straight (หางตรง)',
+    allele2: 'c',
+    type: 'complete',
+    domAllele: 'C', recAllele: 'c',
+    domLabel: 'Curly (หางม้วน)', recLabel: 'Straight (หางตรง)'
+  },
+  {
+    id: 'tailColor',
+    name: 'สีหาง (Tail Color)',
+    allele1Label: 'Purple (สีม่วง)',
+    allele1: 'P',
+    allele2Label: 'Orange (สีส้ม)',
+    allele2: 'p',
+    type: 'complete',
+    domAllele: 'P', recAllele: 'p',
+    domLabel: 'Purple (สีม่วง)', recLabel: 'Orange (สีส้ม)'
+  },
+  {
+    id: 'teeth',
+    name: 'ฟัน (Teeth)',
+    allele1Label: 'Sharp (ฟันแหลม)',
+    allele1: 'S',
+    allele2Label: 'Round (ฟันมน)',
+    allele2: 's',
+    type: 'complete',
+    domAllele: 'S', recAllele: 's',
+    domLabel: 'Sharp (ฟันแหลม)', recLabel: 'Round (ฟันมน)'
+  },
+  {
+    id: 'feet',
+    name: 'เท้า (Feet)',
+    allele1Label: 'Four toes (4 นิ้ว)',
+    allele1: 'F',
+    allele2Label: "Two toes (2 นิ้ว)", // Updated to F'
+    allele2: "F'",
+    type: 'incomplete', 
+    domAllele: 'F', recAllele: "F'",
+    domLabel: 'Four toes (4 นิ้ว)', recLabel: 'Two toes (2 นิ้ว)', mixLabel: 'Three toes (3 นิ้ว)'
+  },
+  {
+    id: 'hornColor',
+    name: 'สีเขา (Horn Color)',
+    allele1Label: 'Brown (สีน้ำตาล)',
+    allele1: 'W',
+    allele2Label: 'Yellow (สีเหลือง)',
+    allele2: 'w',
+    type: 'complete',
+    domAllele: 'W', recAllele: 'w',
+    domLabel: 'Brown (สีน้ำตาล)', recLabel: 'Yellow (สีเหลือง)'
+  },
+  {
+    id: 'ears',
+    name: 'หู (Ears)',
+    allele1Label: 'No ears (ไม่มีหู)',
+    allele1: 'N',
+    allele2Label: 'Two ears (มี 2 หู)',
+    allele2: 'n',
+    type: 'complete',
+    domAllele: 'N', recAllele: 'n',
+    domLabel: 'No ears (ไม่มีหู)', recLabel: 'Two ears (มี 2 หู)'
+  },
+  {
+    id: 'earShape',
+    name: 'รูปร่างหู (Ear Shape)',
+    allele1Label: 'Triangle (สามเหลี่ยม)',
+    allele1: 'Y',
+    allele2Label: 'Round (กลม)',
+    allele2: 'y',
+    type: 'complete',
+    domAllele: 'Y', recAllele: 'y',
+    domLabel: 'Triangle (สามเหลี่ยม)', recLabel: 'Round (กลม)'
+  }
+];
+
+// --- Helper Functions ---
+
+const getPhenotype = (trait, genotype) => {
+  // Construct exact genotype strings to match safely (handling R' correctly)
+  const homoDom = trait.domAllele + trait.domAllele;
+  const homoRec = trait.recAllele + trait.recAllele;
+  
+  // Heterozygous permutations (sorted vs unsorted check)
+  // Our system generates sorted alleles generally, but we check both for safety
+  const hetero1 = trait.domAllele + trait.recAllele;
+  const hetero2 = trait.recAllele + trait.domAllele;
+
+  if (genotype === homoDom) return trait.domLabel;
+  if (genotype === homoRec) return trait.recLabel;
+  
+  if (genotype === hetero1 || genotype === hetero2) {
+      if (trait.type === 'incomplete' || trait.type === 'codominant') {
+          return trait.mixLabel;
+      }
+      return trait.domLabel; // Complete dominance
+  }
+  
+  return "Unknown";
+};
+
+// --- SVG Components for Monster ---
+
+const MonsterVisual = ({ traits }) => {
+  const check = (id, target) => {
+      if (!traits[id]) return false;
+      return traits[id].phenotype.includes(target);
+  };
+  
+  const getGen = (id) => traits[id]?.genotype || '';
+
+  // Default empty state or valid state
+  const hasHead = traits['head']; 
+
+  // Colors
+  const skinG = '#4ADE80'; 
+  const skinB = '#60A5FA'; 
+  const skinGB = 'url(#gradGB)'; 
+  
+  const eyeR = '#EF4444';
+  const eyeW = '#F3F4F6';
+  const eyeP = '#F472B6'; 
+  
+  const tailP = '#A855F7';
+  const tailO = '#F97316';
+  
+  const hornBr = '#92400E';
+  const hornY = '#FACC15';
+
+  // Logic Determinations
+  // Skin Color
+  const skinGen = getGen('skinColor');
+  const skinFill = skinGen === 'GG' ? skinG : (skinGen === 'BB' ? skinB : (skinGen ? skinGB : '#E5E7EB'));
+
+  // Eye Color (RR=Red, R'R'=White, RR'=Pink)
+  const eyeGen = getGen('eyeColor');
+  let eyeFill = '#9CA3AF'; // Default
+  if (eyeGen === "RR") eyeFill = eyeR;
+  else if (eyeGen === "R'R'") eyeFill = eyeW;
+  else if (eyeGen) eyeFill = eyeP;
+  
+  const tailStroke = getGen('tailColor').includes('P') ? tailP : (getGen('tailColor') ? tailO : '#D1D5DB');
+  const hornFill = getGen('hornColor').includes('W') ? hornBr : (getGen('hornColor') ? hornY : '#D1D5DB');
+  
+  const isBald = check('head', 'Bald');
+  // Legs: 2 long vs 4 long
+  const is4Legs = check('legs', '4 long') || check('legs', '4');
+  const is1Eye = check('eyes', 'One');
+  const isCurly = check('tailShape', 'Curly');
+  const isSharpTeeth = check('teeth', 'Sharp');
+  
+  // Feet: 4 toes, 2 toes, 3 toes
+  let toeCount = 2;
+  if (check('feet', '4')) toeCount = 4;
+  else if (check('feet', '3')) toeCount = 3;
+  else toeCount = 2;
+
+  const hasEars = check('ears', 'Two');
+  const isRoundEars = check('earShape', 'Round');
+
+  return (
+    <svg viewBox="0 0 200 220" className="w-full h-full drop-shadow-xl transition-all duration-500">
+      <defs>
+        <linearGradient id="gradGB" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor={skinG} />
+          <stop offset="20%" stopColor={skinG} />
+          <stop offset="20%" stopColor={skinB} />
+          <stop offset="40%" stopColor={skinB} />
+          <stop offset="40%" stopColor={skinG} />
+          <stop offset="60%" stopColor={skinG} />
+          <stop offset="60%" stopColor={skinB} />
+          <stop offset="80%" stopColor={skinB} />
+          <stop offset="80%" stopColor={skinG} />
+          <stop offset="100%" stopColor={skinG} />
+        </linearGradient>
+      </defs>
+
+      {/* Tail - Show only if Tail Shape is determined */}
+      {traits['tailShape'] && (
+        <path 
+            d={isCurly ? "M150 160 Q190 140 170 110 T180 60" : "M150 160 L190 100"} 
+            fill="none" 
+            stroke={tailStroke} 
+            strokeWidth="8" 
+            strokeLinecap="round"
+            className="animate-fade-in"
+        />
+      )}
+
+      {/* Body - Show only if Head is determined (Base) */}
+      {hasHead && (
+          <ellipse cx="100" cy="120" rx="60" ry="55" fill={skinFill} stroke="#1F2937" strokeWidth="3" className="animate-pop" />
+      )}
+
+      {/* Legs & Feet - Show only if Legs determined */}
+      {traits['legs'] && (
+          <g stroke="#1F2937" strokeWidth="3" fill={skinFill} className="animate-fade-in">
+            <path d="M70 165 L70 200" />
+            {traits['feet'] && <ToeDrawing x={70} y={200} count={toeCount} />}
+            
+            <path d="M130 165 L130 200" />
+            {traits['feet'] && <ToeDrawing x={130} y={200} count={toeCount} />}
+
+            {is4Legs && (
+                <>
+                <path d="M50 150 L40 180" />
+                {traits['feet'] && <ToeDrawing x={40} y={180} count={toeCount} />}
+                
+                <path d="M150 150 L160 180" />
+                {traits['feet'] && <ToeDrawing x={160} y={180} count={toeCount} />}
+                </>
+            )}
+        </g>
+      )}
+
+      {/* Ears - Show only if Ears determined and has ears */}
+      {hasEars && traits['ears'] && (
+          <g fill={skinFill} stroke="#1F2937" strokeWidth="3" className="animate-fade-in">
+              {traits['earShape'] ? (
+                  isRoundEars ? (
+                    <>
+                        <circle cx="40" cy="80" r="12" />
+                        <circle cx="160" cy="80" r="12" />
+                    </>
+                  ) : (
+                    <>
+                        <path d="M45 90 L25 60 L60 70 Z" />
+                        <path d="M155 90 L175 60 L140 70 Z" />
+                    </>
+                  )
+              ) : (
+                  // Placeholder ears if shape not yet determined but we know it has ears
+                  <>
+                     <circle cx="40" cy="80" r="10" fill="#ddd" />
+                     <circle cx="160" cy="80" r="10" fill="#ddd" />
+                  </>
+              )}
+          </g>
+      )}
+
+      {/* Horns */}
+      {traits['hornColor'] && (
+          <g fill={hornFill} stroke="#1F2937" strokeWidth="2" className="animate-fade-in">
+            <path d="M80 70 L70 40 L90 65 Z" />
+            <path d="M120 70 L130 40 L110 65 Z" />
+          </g>
+      )}
+
+      {/* Hair - Logic: Show if Head is determined and NOT Bald */}
+      {traits['head'] && !isBald && (
+          <g stroke="#000" strokeWidth="2" fill="none" className="animate-fade-in">
+              <path d="M90 65 Q95 40 85 30" />
+              <path d="M100 65 Q100 35 100 25" />
+              <path d="M110 65 Q105 40 115 30" />
+          </g>
+      )}
+
+      {/* Face Features */}
+      {/* Eyes */}
+      {traits['eyes'] && (
+          <g fill={eyeFill} stroke="#1F2937" strokeWidth="2" className="animate-fade-in">
+            {is1Eye ? (
+                <circle cx="100" cy="100" r="18" />
+            ) : (
+                <>
+                <circle cx="80" cy="100" r="10" />
+                <circle cx="120" cy="100" r="10" />
+                </>
+            )}
+            {/* Pupils */}
+            <g fill="#000" stroke="none">
+                {is1Eye ? (
+                    <circle cx="100" cy="100" r="6" />
+                ) : (
+                    <>
+                    <circle cx="80" cy="100" r="4" />
+                    <circle cx="120" cy="100" r="4" />
+                    </>
+                )}
+            </g>
+        </g>
+      )}
+
+      {/* Mouth & Teeth */}
+      {traits['teeth'] && (
+        <g transform="translate(0, 10)" className="animate-fade-in">
+            <path d="M80 120 Q100 135 120 120" fill="#FFF" stroke="#1F2937" strokeWidth="2" />
+            {/* Teeth */}
+            <g fill="#FFF" stroke="#1F2937" strokeWidth="1">
+                {isSharpTeeth ? (
+                    <>
+                        <path d="M85 122 L90 128 L95 122 Z" />
+                        <path d="M105 122 L110 128 L115 122 Z" />
+                    </>
+                ) : (
+                    <>
+                        <path d="M85 122 Q90 128 95 122" fill="none" />
+                        <path d="M105 122 Q110 128 115 122" fill="none" />
+                    </>
+                )}
+            </g>
+        </g>
+      )}
+    </svg>
+  );
+};
+
+const ToeDrawing = ({x, y, count}) => (
+    <g stroke="#1F2937" strokeWidth="3" strokeLinecap="round">
+        <path d={`M${x-5} ${y} L${x-8} ${y+5}`} />
+        <path d={`M${x+5} ${y} L${x+8} ${y+5}`} />
+        {(count >= 3) && <path d={`M${x} ${y} L${x} ${y+6}`} />}
+        {(count === 4) && <path d={`M${x-2} ${y} L${x-4} ${y+4}`} />} 
+    </g>
+)
+
+// --- Coin Flipping Component (Enhanced for Breeding) ---
+const CoinFlipper = ({ onComplete, trait, p1Gen, p2Gen }) => {
+    // Mode: 'creation' (random from trait alleles) or 'breeding' (random from parent genes)
+    const isBreeding = !!p1Gen && !!p2Gen;
+
+    const [flips, setFlips] = useState([null, null]); // [result1, result2] (0=Head, 1=Tail)
+    const [isAnimating, setIsAnimating] = useState([false, false]);
+
+    const handleFlip = (index) => {
+        if (flips[index] !== null || isAnimating[index]) return;
+
+        const newAnimating = [...isAnimating];
+        newAnimating[index] = true;
+        setIsAnimating(newAnimating);
+
+        // Simulate animation delay
+        setTimeout(() => {
+            const result = Math.random() < 0.5 ? 0 : 1; // 0=Head, 1=Tail
+            const newFlips = [...flips];
+            newFlips[index] = result;
+            setFlips(newFlips);
+            
+            const stopAnimating = [...isAnimating];
+            stopAnimating[index] = false;
+            setIsAnimating(stopAnimating);
+        }, 1000);
+    };
+
+    const isDone = flips[0] !== null && flips[1] !== null;
+
+    useEffect(() => {
+        if (isDone) {
+            // Wait a moment for user to see result then notify parent
+            const timer = setTimeout(() => {
+                let allele1, allele2;
+
+                if (isBreeding) {
+                    // Breeding Logic:
+                    // Need to be careful splitting string with R' or F' (multi-char alleles)
+                    // Simple parsing: if gen length > 2, it likely has a prime.
+                    // But standard logic: we need to parse p1Gen back to alleles first.
+                    
+                    const parseGenotype = (gen, trait) => {
+                        // Special case for our prime alleles (R', F')
+                        if (trait.id === 'eyeColor' || trait.id === 'feet') {
+                             if (gen.includes("'")) {
+                                 // Possible: "RR'", "R'R'", "R'R" (sorted usually RR')
+                                 const countPrime = (gen.match(/'/g) || []).length;
+                                 if (countPrime === 2) return [trait.recAllele, trait.recAllele]; // R'R'
+                                 if (countPrime === 1) return [trait.domAllele, trait.recAllele]; // RR'
+                             }
+                             return [trait.domAllele, trait.domAllele]; // RR
+                        }
+                        // Default simple split
+                        return gen.split('');
+                    };
+
+                    const p1Alleles = parseGenotype(p1Gen, trait);
+                    const p2Alleles = parseGenotype(p2Gen, trait);
+
+                    allele1 = flips[0] === 0 ? p1Alleles[0] : p1Alleles[1];
+                    allele2 = flips[1] === 0 ? p2Alleles[0] : p2Alleles[1];
+                } else {
+                    // Creation Logic:
+                    allele1 = flips[0] === 0 ? trait.allele1 : trait.allele2;
+                    allele2 = flips[1] === 0 ? trait.allele1 : trait.allele2;
+                }
+                
+                onComplete(allele1, allele2);
+            }, 1500);
+            return () => clearTimeout(timer);
+        }
+    }, [isDone, flips, trait, onComplete, isBreeding, p1Gen, p2Gen]);
+
+    // Helpers for labels
+    const getCoinLabel = (index) => {
+        if (isBreeding) {
+            return index === 0 ? 'พ่อ (Parent 1)' : 'แม่ (Parent 2)';
+        }
+        return `เหรียญที่ ${index + 1} (Allele ${index + 1})`;
+    };
+
+    const getResultLabel = (index, result) => {
+        if (result === null) return '';
+        if (isBreeding) {
+            // Display logic only (simplified)
+            return `ส่งต่อ: ${result === 0 ? 'ตัวแรก' : 'ตัวหลัง'}`;
+        } else {
+            const allele = result === 0 ? trait.allele1 : trait.allele2;
+            return `ได้: ${allele}`;
+        }
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-6 py-4">
+            <h3 className="text-lg font-semibold text-indigo-900 flex items-center gap-2">
+                {isBreeding ? 'โยนเหรียญเพื่อเลือก Allele จากพ่อและแม่' : 'โยนเหรียญเพื่อหา Genotype'}
+            </h3>
+            
+            {isBreeding && (
+                 <div className="text-sm text-slate-500 bg-slate-100 px-4 py-2 rounded-lg">
+                    กติกา: <span className="font-bold text-pink-500">หัว</span> = ได้ตัวหน้า, <span className="font-bold text-blue-500">ก้อย</span> = ได้ตัวหลัง ของ Genotype พ่อ/แม่
+                 </div>
+            )}
+
+            <div className="flex gap-8 justify-center">
+                {/* Coin 1 */}
+                <div className="flex flex-col items-center gap-2">
+                    <button 
+                        onClick={() => handleFlip(0)}
+                        disabled={flips[0] !== null || isAnimating[0]}
+                        className={`w-24 h-24 rounded-full border-4 flex items-center justify-center text-3xl shadow-lg transition-all transform 
+                            ${isAnimating[0] ? 'animate-spin border-indigo-300 bg-indigo-100' : 
+                              flips[0] === null ? 'bg-yellow-400 border-yellow-500 hover:scale-110 hover:shadow-xl' : 
+                              flips[0] === 0 ? 'bg-pink-400 border-pink-600 text-white' : 'bg-blue-400 border-blue-600 text-white'}
+                        `}
+                    >
+                        {isAnimating[0] ? '?' : (flips[0] === null ? '฿' : (flips[0] === 0 ? 'หัว' : 'ก้อย'))}
+                    </button>
+                    <span className="text-sm font-bold text-slate-600">{getCoinLabel(0)}</span>
+                    {flips[0] !== null && (
+                        <div className="bg-white px-3 py-1 rounded-full text-xs font-bold border border-slate-200 animate-pop text-indigo-600">
+                            {getResultLabel(0, flips[0])}
+                        </div>
+                    )}
+                </div>
+
+                {/* Coin 2 */}
+                <div className="flex flex-col items-center gap-2">
+                    <button 
+                         onClick={() => handleFlip(1)}
+                         disabled={flips[1] !== null || isAnimating[1]}
+                         className={`w-24 h-24 rounded-full border-4 flex items-center justify-center text-3xl shadow-lg transition-all transform 
+                            ${isAnimating[1] ? 'animate-spin border-indigo-300 bg-indigo-100' : 
+                              flips[1] === null ? 'bg-yellow-400 border-yellow-500 hover:scale-110 hover:shadow-xl' : 
+                              flips[1] === 0 ? 'bg-pink-400 border-pink-600 text-white' : 'bg-blue-400 border-blue-600 text-white'}
+                        `}
+                    >
+                        {isAnimating[1] ? '?' : (flips[1] === null ? '฿' : (flips[1] === 0 ? 'หัว' : 'ก้อย'))}
+                    </button>
+                    <span className="text-sm font-bold text-slate-600">{getCoinLabel(1)}</span>
+                    {flips[1] !== null && (
+                        <div className="bg-white px-3 py-1 rounded-full text-xs font-bold border border-slate-200 animate-pop text-indigo-600">
+                            {getResultLabel(1, flips[1])}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Quiz Component ---
+const QuizComponent = () => {
+    const [quizState, setQuizState] = useState('start'); // start, playing, summary
+    const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+    const [score, setScore] = useState(0);
+    const [questions, setQuestions] = useState([]);
+    
+    // User inputs
+    const [userGenotype, setUserGenotype] = useState('');
+    const [userPhenotype, setUserPhenotype] = useState('');
+    const [feedback, setFeedback] = useState(null); // null, 'correct', 'incorrect'
+
+    // Generate random questions
+    const generateQuestions = () => {
+        const newQuestions = [];
+        // Generate 5 random questions
+        for (let i = 0; i < 5; i++) {
+            const trait = TRAIT_CONFIG[Math.floor(Math.random() * TRAIT_CONFIG.length)];
+            const allele1 = Math.random() < 0.5 ? trait.allele1 : trait.allele2;
+            const allele2 = Math.random() < 0.5 ? trait.allele1 : trait.allele2;
+            
+            // Sort correct genotype
+            const alleles = [allele1, allele2].sort();
+            let correctGenotype = alleles.join('');
+            // Ensure no Aa swapping happens for R' or F'
+            // For others: swap if second is Uppercase and first is Lowercase (rare with standard ASCII sorting but safe to keep for Aa)
+            // Exception: Do NOT run this logic if alleles contain ' (prime)
+            if (!correctGenotype.includes("'")) {
+                if (correctGenotype[0] === correctGenotype[0].toLowerCase() && correctGenotype[1] === correctGenotype[1].toUpperCase()) {
+                    correctGenotype = correctGenotype[1] + correctGenotype[0];
+                }
+            }
+            
+            const correctPhenotype = getPhenotype(trait, correctGenotype);
+            
+            // Generate wrong options for phenotype
+            let phenotypeOptions = [
+                getPhenotype(trait, trait.domAllele+trait.domAllele),
+                getPhenotype(trait, trait.recAllele+trait.recAllele)
+            ];
+            if (trait.type !== 'complete') {
+                phenotypeOptions.push(trait.mixLabel);
+            }
+            // Add correct answer and deduplicate
+            phenotypeOptions = [...new Set([...phenotypeOptions, correctPhenotype])];
+            
+            newQuestions.push({
+                trait,
+                allele1,
+                allele2,
+                correctGenotype,
+                correctPhenotype,
+                phenotypeOptions
+            });
+        }
+        setQuestions(newQuestions);
+        setQuizState('playing');
+        setCurrentQuestionIdx(0);
+        setScore(0);
+        resetInput();
+    };
+
+    const resetInput = () => {
+        setUserGenotype('');
+        setUserPhenotype('');
+        setFeedback(null);
+    };
+
+    const checkAnswer = () => {
+        const q = questions[currentQuestionIdx];
+        const isGenotypeCorrect = userGenotype.trim() === q.correctGenotype;
+        const isPhenotypeCorrect = userPhenotype === q.correctPhenotype;
+
+        if (isGenotypeCorrect && isPhenotypeCorrect) {
+            setFeedback({ type: 'correct', msg: 'เก่งมาก! ถูกต้องทั้งสองอย่าง' });
+            setScore(prev => prev + 1);
+        } else {
+            let msg = '';
+            if (!isGenotypeCorrect && !isPhenotypeCorrect) msg = `ผิดทั้งคู่ครับ เฉลย: Genotype คือ ${q.correctGenotype} และ Phenotype คือ ${q.correctPhenotype}`;
+            else if (!isGenotypeCorrect) msg = `Genotype ผิดครับ (เฉลย: ${q.correctGenotype}) แต่ Phenotype ถูกต้อง`;
+            else msg = `Genotype ถูกต้อง แต่ Phenotype ผิดครับ (เฉลย: ${q.correctPhenotype})`;
+            
+            setFeedback({ type: 'incorrect', msg });
+        }
+    };
+
+    const nextQuestion = () => {
+        if (currentQuestionIdx < questions.length - 1) {
+            setCurrentQuestionIdx(prev => prev + 1);
+            resetInput();
+        } else {
+            setQuizState('summary');
+        }
+    };
+
+    if (quizState === 'start') {
+        return (
+            <div className="flex flex-col items-center justify-center p-10 bg-white rounded-2xl shadow-lg border border-orange-100 text-center">
+                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-6">
+                    <BookOpen size={40} />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">แบบทดสอบความเข้าใจ (Quiz Mode)</h2>
+                <p className="text-slate-500 mb-8 max-w-md">ทดสอบว่าคุณสามารถระบุ Genotype และ Phenotype จาก Allele ที่กำหนดให้ได้หรือไม่ จำนวน 5 ข้อ</p>
+                <button onClick={generateQuestions} className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-3 rounded-full font-bold shadow-lg shadow-orange-200 transition-all">
+                    เริ่มทำแบบทดสอบ
+                </button>
+            </div>
+        );
+    }
+
+    if (quizState === 'summary') {
+        return (
+            <div className="flex flex-col items-center justify-center p-10 bg-white rounded-2xl shadow-lg border border-orange-100 text-center animate-fade-in">
+                <div className="text-6xl mb-4">🏆</div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">สรุปผลคะแนน</h2>
+                <p className="text-slate-500 text-lg mb-8">คุณทำได้ <span className="text-3xl font-bold text-orange-600">{score} / {questions.length}</span> คะแนน</p>
+                <div className="flex gap-4">
+                    <button onClick={generateQuestions} className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-bold">
+                        ทำอีกครั้ง
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const q = questions[currentQuestionIdx];
+
+    return (
+        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden animate-fade-in">
+            {/* Progress Bar */}
+            <div className="bg-slate-100 h-2 w-full">
+                <div 
+                    className="bg-orange-500 h-full transition-all duration-300" 
+                    style={{ width: `${((currentQuestionIdx + 1) / questions.length) * 100}%` }}
+                ></div>
+            </div>
+
+            <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                    <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">คำถามที่ {currentQuestionIdx + 1}/{questions.length}</span>
+                    <span className="text-slate-400 text-sm">Score: {score}</span>
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <span className="bg-indigo-100 text-indigo-700 p-1 rounded text-sm">ลักษณะ: {q.trait.name}</span>
+                </h3>
+
+                {/* Scenario Area */}
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-8 flex flex-col items-center">
+                    <p className="text-slate-500 mb-4 font-medium">กำหนดให้ Allele ที่สุ่มได้คือ:</p>
+                    <div className="flex gap-8">
+                        <div className="text-center">
+                            <div className="w-16 h-16 rounded-full bg-white border-4 border-pink-400 flex items-center justify-center text-xl font-bold shadow-sm mb-2">
+                                {q.allele1}
+                            </div>
+                            <span className="text-xs text-slate-400">จากแม่</span>
+                        </div>
+                        <div className="text-center">
+                            <div className="w-16 h-16 rounded-full bg-white border-4 border-blue-400 flex items-center justify-center text-xl font-bold shadow-sm mb-2">
+                                {q.allele2}
+                            </div>
+                            <span className="text-xs text-slate-400">จากพ่อ</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Question Area */}
+                <div className="space-y-6">
+                    {/* Question 1: Genotype */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">1. พิมพ์ Genotype (เช่น Bb, TT)</label>
+                        <input 
+                            type="text" 
+                            value={userGenotype}
+                            onChange={(e) => setUserGenotype(e.target.value)}
+                            disabled={feedback !== null}
+                            className={`w-full p-3 border rounded-lg font-mono text-lg focus:ring-2 outline-none ${feedback && userGenotype.trim() !== q.correctGenotype ? 'border-red-300 bg-red-50' : (feedback ? 'border-green-300 bg-green-50' : 'border-slate-300 focus:ring-orange-400')}`}
+                            placeholder="พิมพ์คำตอบ..."
+                        />
+                    </div>
+
+                    {/* Question 2: Phenotype */}
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-2">2. ระบุ Phenotype (ลักษณะที่แสดงออก)</label>
+                        <div className="grid grid-cols-1 gap-2">
+                            {q.phenotypeOptions.map((option, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setUserPhenotype(option)}
+                                    disabled={feedback !== null}
+                                    className={`p-3 rounded-lg border text-left transition-all flex justify-between items-center
+                                        ${userPhenotype === option 
+                                            ? (feedback ? (option === q.correctPhenotype ? 'bg-green-100 border-green-500 text-green-800' : 'bg-red-100 border-red-500 text-red-800') : 'bg-orange-50 border-orange-500 text-orange-800')
+                                            : 'bg-white border-slate-200 hover:bg-slate-50'}
+                                        ${feedback && option === q.correctPhenotype ? 'ring-2 ring-green-500 bg-green-50' : ''}
+                                    `}
+                                >
+                                    {option}
+                                    {feedback && option === q.correctPhenotype && <Check size={18} className="text-green-600" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Feedback Area */}
+                {feedback && (
+                    <div className={`mt-6 p-4 rounded-xl border flex gap-3 items-start animate-fade-in ${feedback.type === 'correct' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                        {feedback.type === 'correct' ? <CheckCircle className="shrink-0" /> : <AlertCircle className="shrink-0" />}
+                        <div>
+                            <p className="font-bold">{feedback.type === 'correct' ? 'ถูกต้อง!' : 'ยังไม่ถูกนะครับ'}</p>
+                            <p className="text-sm mt-1">{feedback.msg}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Actions */}
+                <div className="mt-8 flex justify-end">
+                    {!feedback ? (
+                        <button 
+                            onClick={checkAnswer}
+                            disabled={!userGenotype || !userPhenotype}
+                            className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            ส่งคำตอบ (Submit)
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={nextQuestion}
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-orange-200"
+                        >
+                            ข้อต่อไป <ArrowRight size={18} />
+                        </button>
+                    )}
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+
+// --- Main App Component ---
+
+export default function MonsterGenetics() {
+  const [activeTab, setActiveTab] = useState('create'); 
+  
+  // My Monster State
+  const [myMonster, setMyMonster] = useState({});
+  const [creationStep, setCreationStep] = useState(0); // 0=Intro, 1..N=Traits, 99=Finished
+  const [showLevelUp, setShowLevelUp] = useState(false); // Effect when trait is added
+
+  // Breeding State
+  const [parent2Code, setParent2Code] = useState('');
+  const [partnerTraits, setPartnerTraits] = useState(null); // Parsed partner object
+  const [breedingStep, setBreedingStep] = useState(0); // 0=Input, 1..N=Traits, 99=Baby Result
+  const [babyMonster, setBabyMonster] = useState({});
+  const [showBabyLevelUp, setShowBabyLevelUp] = useState(false);
+
+  // --- Logic for Creation ---
+  
+  const currentTrait = creationStep > 0 && creationStep <= TRAIT_CONFIG.length 
+    ? TRAIT_CONFIG[creationStep - 1] 
+    : null;
+
+  const handleTraitComplete = (a1, a2) => {
+      // Sort alleles
+      const alleles = [a1, a2].sort();
+      let gen = alleles.join('');
+      // Formatting Aa (only if no primes involved to avoid messing up R'R')
+      if (!gen.includes("'")) {
+          if (gen[0] === gen[0].toLowerCase() && gen[1] === gen[1].toUpperCase()) {
+              gen = gen[1] + gen[0];
+          }
+      }
+
+      const newTraitData = {
+          genotype: gen,
+          phenotype: getPhenotype(currentTrait, gen),
+          traitName: currentTrait.name
+      };
+
+      setMyMonster(prev => ({
+          ...prev,
+          [currentTrait.id]: newTraitData
+      }));
+
+      // Visual feedback
+      setShowLevelUp(true);
+      setTimeout(() => {
+        setShowLevelUp(false);
+        // Move next
+        if (creationStep < TRAIT_CONFIG.length) {
+            setCreationStep(prev => prev + 1);
+        } else {
+            setCreationStep(99); // Done
+        }
+      }, 2000);
+  };
+
+  const startCreation = () => {
+      setMyMonster({});
+      setCreationStep(1);
+  };
+
+  const resetCreation = () => {
+      if(confirm("เริ่มใหม่ทั้งหมดใช่หรือไม่? ข้อมูลปัจจุบันจะหายไป")) {
+          setMyMonster({});
+          setCreationStep(0);
+      }
+  };
+
+  // --- Logic for Breeding ---
+
+  const getDNAString = (monster) => {
+      if (!monster || Object.keys(monster).length === 0) return "";
+      return TRAIT_CONFIG.map(t => monster[t.id]?.genotype || '??').join('-');
+  };
+
+  const parseDNAString = (dna) => {
+      const parts = dna.split('-');
+      if (parts.length !== TRAIT_CONFIG.length) return null;
+      const monster = {};
+      TRAIT_CONFIG.forEach((t, index) => {
+          monster[t.id] = {
+              genotype: parts[index],
+              phenotype: getPhenotype(t, parts[index]),
+              traitName: t.name
+          }
+      });
+      return monster;
+  };
+
+  const startBreedingProcess = () => {
+      const p2 = parseDNAString(parent2Code.trim());
+      if (!p2) {
+          alert('รหัส DNA ของเพื่อนไม่ถูกต้อง');
+          return;
+      }
+      setPartnerTraits(p2);
+      setBabyMonster({});
+      setBreedingStep(1); // Start with first trait
+  };
+
+  const currentBreedingTrait = breedingStep > 0 && breedingStep <= TRAIT_CONFIG.length 
+    ? TRAIT_CONFIG[breedingStep - 1] 
+    : null;
+
+  const handleBreedingTraitComplete = (a1, a2) => {
+       // Logic is same as creation
+       const alleles = [a1, a2].sort();
+       let gen = alleles.join('');
+       
+       if (!gen.includes("'")) {
+           if (gen[0] === gen[0].toLowerCase() && gen[1] === gen[1].toUpperCase()) {
+               gen = gen[1] + gen[0];
+           }
+       }
+ 
+       const newTraitData = {
+           genotype: gen,
+           phenotype: getPhenotype(currentBreedingTrait, gen),
+           traitName: currentBreedingTrait.name
+       };
+ 
+       setBabyMonster(prev => ({
+           ...prev,
+           [currentBreedingTrait.id]: newTraitData
+       }));
+ 
+       setShowBabyLevelUp(true);
+       setTimeout(() => {
+            setShowBabyLevelUp(false);
+            if (breedingStep < TRAIT_CONFIG.length) {
+                setBreedingStep(prev => prev + 1);
+            } else {
+                setBreedingStep(99); // Done
+            }
+       }, 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-2 md:p-6 pb-20">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* Header */}
+        <header className="mb-6 flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+          <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-indigo-700 flex items-center gap-2">
+                🧬 Monster Genetics Lab
+              </h1>
+              <p className="text-slate-500 text-sm">ห้องปฏิบัติการพันธุศาสตร์สัตว์ประหลาด</p>
+          </div>
+          <div className="flex gap-2 mt-4 md:mt-0 flex-wrap">
+             <button onClick={() => setActiveTab('create')} className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 ${activeTab==='create' ? 'bg-indigo-100 text-indigo-700' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
+                <Dna size={16} /> 1. สร้างมอนสเตอร์
+             </button>
+             <button onClick={() => setActiveTab('breed')} disabled={creationStep !== 99} className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 ${activeTab==='breed' ? 'bg-pink-100 text-pink-700' : 'bg-white text-slate-500'} ${creationStep !== 99 && 'opacity-50 cursor-not-allowed'}`}>
+                <Heart size={16} /> 2. ผสมพันธุ์
+             </button>
+             <button onClick={() => setActiveTab('quiz')} className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 ${activeTab==='quiz' ? 'bg-orange-100 text-orange-700' : 'bg-white text-slate-500 hover:bg-slate-50'}`}>
+                <BookOpen size={16} /> 3. ทดสอบความรู้
+             </button>
+          </div>
+        </header>
+
+        {/* --- CREATION MODE --- */}
+        {activeTab === 'create' && (
+          <div className="grid lg:grid-cols-12 gap-6 h-full">
+            
+            {/* Left Panel: Visual & Status */}
+            <div className="lg:col-span-5 flex flex-col gap-6 order-2 lg:order-1">
+                {/* Monster Preview Card */}
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 flex flex-col items-center justify-center relative overflow-hidden min-h-[350px]">
+                    <h2 className="absolute top-4 left-4 font-bold text-slate-400 text-sm tracking-wider uppercase">Monster Preview</h2>
+                    
+                    {creationStep > 0 ? (
+                        <div className="relative w-64 h-64 transition-all duration-500">
+                             {/* Glow effect when updating */}
+                             <div className={`absolute inset-0 bg-yellow-300 rounded-full blur-3xl opacity-0 transition-opacity duration-500 ${showLevelUp ? 'opacity-60' : ''}`}></div>
+                             <MonsterVisual traits={myMonster} />
+                        </div>
+                    ) : (
+                        <div className="text-center text-slate-300">
+                             <div className="w-40 h-40 bg-slate-100 rounded-full mx-auto mb-4 border-4 border-dashed border-slate-200"></div>
+                             <p>กดเริ่มกิจกรรมเพื่อสร้างมอนสเตอร์</p>
+                        </div>
+                    )}
+                    
+                    {/* DNA Bar Code */}
+                    {creationStep > 0 && (
+                        <div className="mt-6 w-full bg-slate-100 rounded-lg p-3 font-mono text-xs text-slate-500 text-center break-all">
+                             DNA: {getDNAString(myMonster) || "..."}
+                        </div>
+                    )}
+                </div>
+
+                {/* Trait Checklist */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    <h3 className="font-bold text-slate-700 mb-3 text-sm">ความคืบหน้า (Traits Progress)</h3>
+                    <ul className="space-y-2">
+                        {TRAIT_CONFIG.map((t, idx) => (
+                            <li key={t.id} className={`flex justify-between items-center p-2 rounded text-sm ${myMonster[t.id] ? 'bg-green-50 text-green-800' : (idx + 1 === creationStep ? 'bg-indigo-50 text-indigo-800 border-l-4 border-indigo-500' : 'bg-slate-50 text-slate-400')}`}>
+                                <span className="flex items-center gap-2">
+                                    {myMonster[t.id] ? <CheckCircle size={14} /> : <div className="w-3.5 h-3.5 rounded-full border border-current"></div>}
+                                    {t.name}
+                                </span>
+                                <span className="font-mono font-bold">{myMonster[t.id]?.genotype || '-'}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+
+            {/* Right Panel: Action Area */}
+            <div className="lg:col-span-7 flex flex-col order-1 lg:order-2">
+                <div className="bg-white rounded-2xl shadow-xl border border-indigo-50 p-6 md:p-10 flex-1 flex flex-col items-center justify-center min-h-[400px]">
+                    
+                    {/* Step 0: Welcome */}
+                    {creationStep === 0 && (
+                        <div className="text-center max-w-md">
+                            <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-6">
+                                <Play size={40} fill="currentColor" />
+                            </div>
+                            <h2 className="text-3xl font-bold text-slate-800 mb-4">พร้อมจะสร้างมอนสเตอร์รึยัง?</h2>
+                            <p className="text-slate-500 mb-8">เราจะทำการโยนเหรียญเพื่อกำหนดพันธุกรรมทีละลักษณะ รวมทั้งหมด {TRAIT_CONFIG.length} ขั้นตอน เพื่อดูว่ามอนสเตอร์ของคุณหน้าตาเป็นอย่างไร</p>
+                            <button onClick={startCreation} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xl px-10 py-4 rounded-full font-bold shadow-lg shadow-indigo-200 transition-all hover:scale-105 active:scale-95">
+                                เริ่มกิจกรรม (Start)
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Steps 1..N: Flipping */}
+                    {currentTrait && !showLevelUp && (
+                        <div className="w-full max-w-lg animate-fade-in">
+                            <div className="flex justify-between items-end mb-6 border-b border-slate-100 pb-4">
+                                <div>
+                                    <span className="text-indigo-500 font-bold tracking-wider text-xs uppercase">Trait {creationStep}/{TRAIT_CONFIG.length}</span>
+                                    <h2 className="text-2xl font-bold text-slate-800">{currentTrait.name}</h2>
+                                </div>
+                                <button onClick={resetCreation} className="text-slate-300 hover:text-red-400" title="Reset">
+                                    <RotateCcw size={18} />
+                                </button>
+                            </div>
+
+                            {/* Reference Table for Current Trait */}
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-sm">
+                                <h4 className="font-bold text-slate-600 mb-2">ตารางอ้างอิง (Allele Reference)</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-col items-center">
+                                        <span className="text-xs text-slate-400 uppercase">Allele 1 (หัว)</span>
+                                        <span className="text-2xl font-bold text-pink-500 my-1">{currentTrait.allele1}</span>
+                                        <span className="text-center leading-tight">{currentTrait.allele1Label}</span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg border border-slate-200 flex flex-col items-center">
+                                        <span className="text-xs text-slate-400 uppercase">Allele 2 (ก้อย)</span>
+                                        <span className="text-2xl font-bold text-blue-500 my-1">{currentTrait.allele2}</span>
+                                        <span className="text-center leading-tight">{currentTrait.allele2Label}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Coin Flipper */}
+                            <CoinFlipper 
+                                key={currentTrait.id} // Reset state on trait change
+                                trait={currentTrait} 
+                                onComplete={handleTraitComplete} 
+                            />
+                        </div>
+                    )}
+
+                    {/* Step Transition / Loading Effect */}
+                    {showLevelUp && (
+                         <div className="text-center animate-bounce-in">
+                             <div className="text-6xl mb-4">🧬</div>
+                             <h3 className="text-2xl font-bold text-green-600">บันทึกพันธุกรรมเรียบร้อย!</h3>
+                             <p className="text-slate-500">กำลังประมวลผลลักษณะต่อไป...</p>
+                         </div>
+                    )}
+
+                    {/* Step 99: Finished */}
+                    {creationStep === 99 && (
+                        <div className="text-center w-full max-w-md animate-fade-in">
+                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-green-600 mx-auto mb-6">
+                                <CheckCircle size={40} />
+                            </div>
+                            <h2 className="text-3xl font-bold text-slate-800 mb-4">สำเร็จ! My Monster สมบูรณ์แล้ว</h2>
+                            <p className="text-slate-500 mb-8">คุณได้มอนสเตอร์ที่มีลักษณะเฉพาะตัวจากการสุ่มพันธุกรรม ตอนนี้คุณสามารถนำรหัส DNA ไปจับคู่กับเพื่อนได้ในตอนที่ 2</p>
+                            
+                            <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-100 mb-8">
+                                <h4 className="font-bold text-indigo-900 mb-2">รหัส DNA ของคุณ</h4>
+                                <div className="flex gap-2">
+                                    <input 
+                                        readOnly 
+                                        value={getDNAString(myMonster)} 
+                                        className="flex-1 p-2 border border-indigo-200 rounded bg-white font-mono text-center text-sm"
+                                    />
+                                    <button 
+                                        onClick={() => {navigator.clipboard.writeText(getDNAString(myMonster)); alert("คัดลอกแล้ว!");}}
+                                        className="bg-indigo-600 text-white px-4 rounded hover:bg-indigo-700"
+                                    >
+                                        <Share2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button onClick={() => setActiveTab('breed')} className="w-full bg-pink-500 hover:bg-pink-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-pink-200 transition-all flex items-center justify-center gap-2">
+                                ไปยังตอนที่ 2: Baby Creation <ArrowRight size={20} />
+                            </button>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- BREEDING MODE --- */}
+        {activeTab === 'breed' && (
+             <div className="animate-fade-in max-w-5xl mx-auto">
+                 <div className="bg-white rounded-2xl shadow-lg border border-pink-100 overflow-hidden">
+                     <div className="bg-pink-50 p-6 border-b border-pink-100 text-center">
+                         <h2 className="text-2xl font-bold text-pink-700 flex items-center justify-center gap-2">
+                             <Heart className="fill-pink-500 text-pink-500" /> ห้องผสมพันธุ์ (Baby Creation)
+                         </h2>
+                         <p className="text-pink-600 mt-1">กระบวนการสร้างลูกมอนสเตอร์จากการสุ่ม Allele ของพ่อและแม่</p>
+                     </div>
+
+                     {/* Step 0: Input DNA */}
+                     {breedingStep === 0 && (
+                        <div className="p-8 grid md:grid-cols-2 gap-8 items-center">
+                            <div className="text-center">
+                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-4">
+                                    <div className="w-40 h-40 mx-auto">
+                                        <MonsterVisual traits={myMonster} />
+                                    </div>
+                                    <p className="font-bold text-slate-700 mt-2">คุณ (Parent 1)</p>
+                                    <code className="text-xs bg-white p-1 rounded border">{getDNAString(myMonster)}</code>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">ใส่รหัส DNA ของเพื่อน (Parent 2)</label>
+                                    <div className="relative">
+                                        <Dna className="absolute left-3 top-3 text-slate-400" size={18} />
+                                        <input 
+                                            type="text" 
+                                            value={parent2Code}
+                                            onChange={(e) => setParent2Code(e.target.value)}
+                                            placeholder="วาง DNA เพื่อนที่นี่..."
+                                            className="w-full pl-10 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-pink-400 outline-none text-sm font-mono"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                {parent2Code && parseDNAString(parent2Code) && (
+                                    <div className="bg-green-50 p-3 rounded border border-green-200 flex items-center gap-2 text-sm text-green-700">
+                                        <CheckCircle size={16} /> DNA เพื่อนถูกต้องพร้อมผสมพันธุ์!
+                                    </div>
+                                )}
+
+                                <button 
+                                    onClick={startBreedingProcess}
+                                    disabled={!parent2Code || !parseDNAString(parent2Code)}
+                                    className="w-full bg-pink-500 hover:bg-pink-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white py-3 rounded-lg font-bold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    เริ่มกระบวนการผสมพันธุ์ <ArrowRight size={18} />
+                                </button>
+                            </div>
+                        </div>
+                     )}
+
+                     {/* Steps 1..N: Breeding Process */}
+                     {currentBreedingTrait && !showBabyLevelUp && (
+                         <div className="p-8 flex flex-col items-center">
+                             <div className="w-full max-w-2xl">
+                                 <div className="flex justify-between items-center mb-6">
+                                     <span className="text-pink-500 font-bold tracking-wider text-xs uppercase">Breeding Step {breedingStep}/{TRAIT_CONFIG.length}</span>
+                                     <h2 className="text-2xl font-bold text-slate-800">ลักษณะ: {currentBreedingTrait.name}</h2>
+                                 </div>
+
+                                 {/* Parent Genotypes Display */}
+                                 <div className="grid grid-cols-2 gap-4 mb-8">
+                                     <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200 text-center relative">
+                                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-indigo-500 text-white text-xs px-2 py-1 rounded-full">Parent 1</div>
+                                         <div className="text-3xl font-mono font-bold text-indigo-700 mt-2">{myMonster[currentBreedingTrait.id].genotype}</div>
+                                         <div className="text-xs text-indigo-400 mt-1">Phenotype: {myMonster[currentBreedingTrait.id].phenotype}</div>
+                                     </div>
+                                     <div className="bg-pink-50 p-4 rounded-xl border border-pink-200 text-center relative">
+                                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full">Parent 2</div>
+                                         <div className="text-3xl font-mono font-bold text-pink-700 mt-2">{partnerTraits[currentBreedingTrait.id].genotype}</div>
+                                         <div className="text-xs text-pink-400 mt-1">Phenotype: {partnerTraits[currentBreedingTrait.id].phenotype}</div>
+                                     </div>
+                                 </div>
+
+                                 {/* Coin Flipper for Breeding */}
+                                 <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                                     <CoinFlipper 
+                                         key={`breed-${currentBreedingTrait.id}`}
+                                         trait={currentBreedingTrait}
+                                         p1Gen={myMonster[currentBreedingTrait.id].genotype}
+                                         p2Gen={partnerTraits[currentBreedingTrait.id].genotype}
+                                         onComplete={handleBreedingTraitComplete}
+                                     />
+                                 </div>
+                             </div>
+                         </div>
+                     )}
+
+                    {/* Step Transition */}
+                    {showBabyLevelUp && (
+                         <div className="p-20 text-center animate-bounce-in">
+                             <div className="text-6xl mb-4">👶</div>
+                             <h3 className="text-2xl font-bold text-pink-600">ได้ลักษณะลูกแล้ว!</h3>
+                             <p className="text-slate-500">กำลังไปลักษณะถัดไป...</p>
+                         </div>
+                    )}
+
+                     {/* Step 99: Baby Result */}
+                     {breedingStep === 99 && babyMonster && (
+                         <div className="bg-gradient-to-b from-pink-600 to-purple-700 p-8 text-white relative animate-fade-in">
+                             <div className="max-w-4xl mx-auto text-center">
+                                 <h3 className="text-3xl font-bold mb-8">🎉 ยินดีด้วย! ลูกมอนสเตอร์สมบูรณ์แล้ว</h3>
+                                 
+                                 <div className="flex flex-col md:flex-row items-center justify-center gap-10 mb-8">
+                                     {/* Family Portrait */}
+                                     <div className="flex items-center gap-4 opacity-70 scale-75 hidden md:flex">
+                                         <div className="text-center">
+                                             <div className="w-24 h-24 bg-white/20 rounded-full mb-2 p-2"><MonsterVisual traits={myMonster} /></div>
+                                             <p className="text-xs">Parent 1</p>
+                                         </div>
+                                         <div className="text-2xl">+</div>
+                                         <div className="text-center">
+                                             <div className="w-24 h-24 bg-white/20 rounded-full mb-2 p-2"><MonsterVisual traits={partnerTraits} /></div>
+                                             <p className="text-xs">Parent 2</p>
+                                         </div>
+                                         <div className="text-2xl">=</div>
+                                     </div>
+
+                                     {/* Baby */}
+                                     <div className="bg-white/10 backdrop-blur-md p-8 rounded-full border-4 border-white/20 shadow-2xl relative">
+                                          <div className="absolute -top-4 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-lg">New!</div>
+                                          <div className="w-56 h-56">
+                                              <MonsterVisual traits={babyMonster} />
+                                          </div>
+                                     </div>
+                                 </div>
+
+                                 <div className="bg-white/10 rounded-xl p-6 text-left max-w-2xl mx-auto">
+                                     <h4 className="font-bold border-b border-white/20 pb-2 mb-4">สรุปพันธุกรรมลูก (Baby Traits Analysis)</h4>
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                                         {TRAIT_CONFIG.map(t => (
+                                             <div key={t.id} className="flex justify-between items-center py-1 border-b border-white/5 hover:bg-white/5 px-2 rounded">
+                                                 <span className="opacity-80">{t.name}</span>
+                                                 <div className="flex gap-2">
+                                                     <span className="font-mono font-bold bg-white/20 px-2 rounded text-xs py-0.5">{babyMonster[t.id].genotype}</span>
+                                                     <span className="font-light text-xs opacity-90">{babyMonster[t.id].phenotype}</span>
+                                                 </div>
+                                             </div>
+                                         ))}
+                                     </div>
+                                 </div>
+                                 
+                                 <button onClick={() => setBreedingStep(0)} className="mt-8 bg-white text-pink-600 px-8 py-3 rounded-full font-bold hover:bg-pink-50 transition-colors shadow-lg">
+                                     ผสมพันธุ์คู่อื่น (Start New Breed)
+                                 </button>
+                             </div>
+                         </div>
+                     )}
+                 </div>
+             </div>
+        )}
+
+        {/* --- QUIZ MODE --- */}
+        {activeTab === 'quiz' && (
+            <div className="max-w-2xl mx-auto">
+                <QuizComponent />
+            </div>
+        )}
+
+      </div>
+      
+      {/* CSS Styles injected for animations */}
+      <style>{`
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      `}</style>
+    </div>
+  );
+}
